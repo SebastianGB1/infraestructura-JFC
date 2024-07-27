@@ -1,5 +1,4 @@
 from aws_cdk import (
-    # Duration,
     CfnOutput,
     Stack,
     aws_cloudfront,
@@ -35,13 +34,13 @@ class JfcStack(Stack):
         self.create_autoscaling_group()
         self.create_load_balancer()
 
-        #Datos resources
+        # Datos resources
         self.create_rds_db()
 
-        #Alarmas
+        # Alarmas
         self.add_cloudwatch_alarms()
 
-        #Outputs
+        # Outputs
         self.add_cloudformation_outputs()
 
     def create_s3_bucket(self):
@@ -197,7 +196,7 @@ class JfcStack(Stack):
         Method to create RDS database
         '''
 
-        self.db =aws_rds.DatabaseInstance(
+        self.db = aws_rds.DatabaseInstance(
             self,
             f'{self.app_config["app_name"]}-DataBase',
             engine=aws_rds.DatabaseInstanceEngine.POSTGRES,
@@ -206,7 +205,7 @@ class JfcStack(Stack):
             vpc=self.vpc,
             security_groups=[self.security_group],
             removal_policy=RemovalPolicy.DESTROY,
-            cloudwatch_logs_exports= ["postgresql", "upgrade"],
+            cloudwatch_logs_exports=["postgresql", "upgrade"],
             delete_automated_backups=False,
             multi_az=True,
         )
