@@ -1,5 +1,6 @@
 from aws_cdk import (
     # Duration,
+    CfnOutput,
     Stack,
     aws_cloudfront,
     aws_s3,
@@ -37,6 +38,12 @@ class JfcStack(Stack):
         #Datos resources
         self.create_rds_db()
 
+        #Alarmas
+        self.add_cloudwatch_alarms()
+
+        #Outputs
+        self.add_cloudformation_outputs()
+
     def create_s3_bucket(self):
         '''
         Method to create S3 bucket to store the static content
@@ -44,7 +51,6 @@ class JfcStack(Stack):
         self.s3_bucket = aws_s3.Bucket(
             self,
             f'{self.app_config["app_name"]}-bucket',
-            # bucket_name=f'{self.app_config["app_name"].lower()}-bucket2',
             removal_policy=RemovalPolicy.DESTROY,
         )
 
@@ -208,17 +214,51 @@ class JfcStack(Stack):
     def add_cloudwatch_alarms(self):
         aws_cloudwatch.Alarm(
             self,
-            id="HighCPU-DB",
-            metric=self.db.metric_cpu_utilization(),
-            threshold=90,
-            evaluation_periods=1
+            "WAF-alert",
+            metric=aws_cloudwatch.Metric(
+                namespace="AWS/CloudFront",
+                metric_name="4xxErrorRate",
+                dimensions_map={
+                    "DistributionId": self.cloudfront_distribution.distribution_id
+                }
+            ),
+            threshold=1,
+            evaluation_periods=1,
+            comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+            alarm_description="Alarma para el porcentaje de errores 4xx en CloudFront."
         )
 
         aws_cloudwatch.Alarm(
             self,
-            "HighCPU-EC2-Instances",
-            metric=self.load_balancer.metric_cpu_utilization(),
+            id="HighCPU-DB",
+            metric=self.db.metric_cpu_utilization(),
             threshold=90,
-            evaluation_periods=1
+            evaluation_periods=1,
+            alarm_description="Alarma para el porcetaje de CPU utilizado en base de datos"
         )
 
+        aws_cloudwatch.Alarm(
+            self,
+            id="HighConnections-DB",
+            metric=self.db.metric("DatabaseConnections"),
+            threshold=1000,
+            evaluation_periods=1,
+            alarm_description="Alarma para el numero de conexiones a la base de datos"
+        )
+
+    def add_cloudformation_outputs(self):
+        '''
+        Method to add CloudFormation outputs
+        '''
+        CfnOutput(
+            self,
+            "BucketName",
+            value=self.s3_bucket.bucket_name,
+            description="Nombre del bucket S3"
+        )
+        CfnOutput(
+            self,
+            "DistributionDomain",
+            value=self.cloudfront_distribution.domain_name,
+            description="Dominio del distribuido CloudFront"
+        )
