@@ -17,7 +17,15 @@
   "context": {
     "app_config":{
       "app_name": "JFC-ecommerce",
-      "deployment_enviroment": "develop"
+      "deployment_enviroment": "develop",
+      "ec2":{
+        "allow_ssh": false,
+        "allow_http": true,
+        "allow_https": true,
+        "instance_type": "t2.micro",
+        "min_capacity":1,
+        "max_capacity":2
     }
+  }
   }
 }
